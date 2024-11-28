@@ -1,5 +1,4 @@
-
-##사용할 I/O
+## 사용할 I/O
 1. DC 모터
 2. potentiometer
 3. switch(button)
@@ -35,5 +34,29 @@ void delay_us(volatile int ms){
 int DC_val(){
 }
 ```
+## 사용 포트 번호
+7 segment
+- 포트D 1~7 7seg FND 연결
+- 포트D 8~11 FND select 연결
+
+인터럽트
+- 포트C 11~13 스위치 연결
+  - 드라이브 모드 설정할 예정 D N R
+
+DC모터
+- 전진, 후진부 두 핀 사용할 예정
+- 아마 ground도 연결할듯?
+
+초음파 센서
+- VCC, GND, TRIG, ECHO 네 핀 사용
+
+potentiometer 
+- ADC 12 채널로 변환 예정,,,
+
+부저
+- VCC, GND 
+피에조부저
+- VCC, GND 연결하고 PWM으로 해야하나? 아니면 부저만 사용하기 
+
 
  
