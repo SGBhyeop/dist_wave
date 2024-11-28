@@ -51,7 +51,7 @@ DC모터
 - VCC, GND, TRIG, ECHO 네 핀 사용
 
 potentiometer 
-- ADC 12 채널로 변환 예정,,,
+- ADC 13 채널(포트C 15번 핀)로 변환 예정,,,
 
 부저
 - VCC, GND 
