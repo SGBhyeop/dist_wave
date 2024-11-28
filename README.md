@@ -60,5 +60,6 @@ potentiometer
 피에조부저
 - VCC, GND 연결하고 PWM으로 해야하나? 아니면 부저만 사용하기 
 
+![image](https://github.com/user-attachments/assets/bb0c5724-33f6-4896-b18c-b35626b1e3a8)
 
  
