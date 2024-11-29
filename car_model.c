@@ -43,8 +43,13 @@ void PORT_init(){ // 7-seg 입출력설정, 부저, DC모터, 인터럽트, 초�
     PORTC->PCR[12] |=(10<<16);
     PORTC->PCR[13] |=(10<<16);
     /* ultrasonic sensor setting */
+
+    /* buzzer setting */
+    PTC->PDDR |= 1<<5;
+    PORTC->PCR[5] = PORT_PCR_MUX(1);
 }
-// function for changing mode
+
+/* function for changing mode */ 
 void PORTC_IRQHandler(void){
 
 	PORTC->PCR[11] &= ~(0x01000000); // 플래그 비트 0으로 만들기 Port Control Register ISF bit '0' set
@@ -66,49 +71,23 @@ void PORTC_IRQHandler(void){
     PORTC->PCR[12] |= 0x01000000;
     PORTC->PCR[13] |= 0x01000000;
 }
-void Seg_out(int number){
-    Dtime = 1000;
-	j = 0;
-
-	num3=(number/1000)%10; num2=(number/100)%10; num1=(number/10)%10; num0= number%10;
-
-	// 1000
-	PTD->PSOR = FND_SEL[j]; PTD->PCOR =0x7f; PTD->PSOR = FND_DATA[num3];
-    delay_us(Dtime);
-	PTD->PCOR = 0xfff; j++;
-
-	// 100
-	PTD->PSOR = FND_SEL[j]; PTD->PCOR =0x7f; PTD->PSOR = FND_DATA[num2];
-    delay_us(Dtime);
-	PTD->PCOR = 0xfff; j++;
-
-	// 10
-	PTD->PSOR = FND_SEL[j]; PTD->PCOR =0x7f; PTD->PSOR = FND_DATA[num1];
-    delay_us(Dtime);
-    PTD->PCOR = 0xfff; j++;
-
-	// 1
-	PTD->PSOR = FND_SEL[j]; PTD->PCOR =0x7f; PTD->PSOR = FND_DATA[num0];
-    delay_us(Dtime);
-	PTD->PCOR = 0xfff; j=0;
-}
 
 //buzzer
 void Set_buzzer(){
+    if(i) PTC->PSOR |= 1<<5; 
+    else PTC->PCOR |= 1<<5;
     // pin 두 개
-
-
 }
 //p-buzzer, when reverse driving
 void Set_pbuzzer(int i){
-    if(i){
-        // 
-    }
+    
 
 }
 
 //read from ultrasonic sensor
 void dist_val(){
+    int distance=0;
+    return distance;
 }
 
 /* PWM setting */
@@ -136,8 +115,52 @@ void FTM0_CH0_PWM (int i){ //후진부 연결
 	FTM0->SC|=FTM_SC_CLKS(3);
 }
 
-void delay_us(volatile int ms){
-    
+/* 딜레이 세팅 */
+void LPIT0_init (uint32_t delay)
+{
+    uint32_t timeout;
+    PCC->PCCn[PCC_LPIT_INDEX] = PCC_PCCn_PCS(6);    /* Clock Src = 6 (SPLL2_DIV2_CLK)*/
+    PCC->PCCn[PCC_LPIT_INDEX] |= PCC_PCCn_CGC_MASK; /* Enable clk to LPIT0 regs       */
+
+    LPIT0->MCR |= LPIT_MCR_M_CEN_MASK;  
+    timeout=delay* 40;            //ms setting*40000 us setting *40
+    LPIT0->TMR[0].TVAL = timeout;      /* Chan 0 Timeout period: 40M clocks */
+    LPIT0->TMR[0].TCTRL |= LPIT_TMR_TCTRL_T_EN_MASK;
+}
+
+void delay_us(volatile int us){
+    LPIT0_init(us);           /* Initialize PIT0 for 1 second timeout  */
+    while (0 == (LPIT0->MSR &  0x01/*LPIT_MSR_TIF0_MASK*/)) {} /* Wait for LPIT0 CH0 Flag */
+    lpit0_ch0_flag_counter++;         /* Increment LPIT0 timeout counter */
+    LPIT0->MSR |= 0x00;//............LPIT_MSR_TIF0_MASK; /* Clear LPIT0 timer flag 0 */
+}
+
+/* 7세그먼트 세팅 */
+void Seg_out(int number){
+    Dtime = 1000;
+	j = 0;
+
+	num3=(number/1000)%10; num2=(number/100)%10; num1=(number/10)%10; num0= number%10;
+
+	// 1000
+	PTD->PSOR = FND_SEL[j]; PTD->PCOR =0x7f; PTD->PSOR = FND_DATA[num3];
+    delay_us(Dtime);
+	PTD->PCOR = 0xfff; j++;
+
+	// 100
+	PTD->PSOR = FND_SEL[j]; PTD->PCOR =0x7f; PTD->PSOR = FND_DATA[num2];
+    delay_us(Dtime);
+	PTD->PCOR = 0xfff; j++;
+
+	// 10
+	PTD->PSOR = FND_SEL[j]; PTD->PCOR =0x7f; PTD->PSOR = FND_DATA[num1];
+    delay_us(Dtime);
+    PTD->PCOR = 0xfff; j++;
+
+	// 1
+	PTD->PSOR = FND_SEL[j]; PTD->PCOR =0x7f; PTD->PSOR = FND_DATA[num0];
+    delay_us(Dtime);
+	PTD->PCOR = 0xfff; j=0;
 }
 
 int main(){
