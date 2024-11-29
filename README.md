@@ -57,7 +57,8 @@ potentiometer
 - ADC 13 채널(포트C 15번 핀)로 변환 예정,,,
 
 부저
-- VCC, GND 
+- VCC, GND
+- 포트C 5번핀
 피에조부저
 - VCC, GND 연결하고 PWM으로 해야하나? 아니면 부저만 사용하기 
 
