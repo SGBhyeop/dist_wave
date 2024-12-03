@@ -103,11 +103,12 @@ int main(void)
 	PORT_init();           /* Configure ports */
 	  for(;;)
 	  {
-    	  convertAdcChan(12);                   /* Convert Channel AD12 to pot on EVB 	*/
+    	  convertAdcChan(13);                   /* Convert Channel AD12 to pot on EVB 	*/
     	  while(adc_complete()==0){}            /* Wait for conversion complete flag 	*/
     	  adcResultInMv = read_adc_chx();       /* Get channel's conversion results in mv */
-		  D=adcResultInMv*1.6;						/* 5000*1.6=8000*/
-		  FTM0_CH1_PWM(D);
+	  D=adcResultInMv*1.6;						/* 5000*1.6=8000*/
+	  if(D>6000) D=8000;
+	  FTM0_CH1_PWM(D);
 
 	  }
 
