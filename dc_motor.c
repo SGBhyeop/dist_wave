@@ -79,16 +79,9 @@ void FTM0_CH1_PWM (int i){//uint32_t i){
 
 void PORT_init (void)
 {
-	/*!
-	 * Pins definitions
-	 * ===================================================
-	 *
-	 * Pin number        | Function
-	 * ----------------- |------------------
-	 * PTD16			 | FTM0CH1
-	 */
-  PCC->PCCn[PCC_PORTD_INDEX ]|=PCC_PCCn_CGC_MASK;   /* Enable clock for PORTD */
-  PORTD->PCR[16]|=PORT_PCR_MUX(2);           		/* Port D16: MUX = ALT2, FTM0CH1 */
+	/*D16 -> C1 change  */
+  PCC->PCCn[PCC_PORTC_INDEX ]|=PCC_PCCn_CGC_MASK;   /* Enable clock for PORTD */
+  PORTD->PCR[1]|=PORT_PCR_MUX(2);           		/* Port D16: MUX = ALT2, FTM0CH1 */
 }
 
 int main(void)
