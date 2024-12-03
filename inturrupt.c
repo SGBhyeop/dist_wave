@@ -134,7 +134,7 @@ int main(void)
       PTD->PSOR |= 1<<0|1<<16;
     }
     else{
-      PTD->PCOR |= 1<<16// Green LED
+      PTD->PCOR |= 1<<16;// Green LED
       PTD->PSOR |= 1<<15|1<<0;
     }
   }
