@@ -1,48 +1,75 @@
 #include "device_registers.h"
-#include "MKL25Z4.h"  // MCU에 맞는 헤더 파일을 포함해야 합니다.
+#include "clocks_and_modes.h"
 
-#define TRIG_PIN 0  // 트리거 핀, GPIO 포트 및 핀 번호에 맞게 설정
-#define ECHO_PIN 1  // 에코 핀, GPIO 포트 및 핀 번호에 맞게 설정
+#define TRIGGER_PIN 0   // Trigger 핀 (PTD0)
+#define ECHO_PIN 1      // Echo 핀 (PTD1)
 
-// 트리거 핀에 10us 펄스를 보내 초음파 발사
-void send_trigger_pulse(void) {
-    GPIOB->PDOR |= (1 << TRIG_PIN); // 트리거 핀 High (1)
-    for (volatile int i = 0; i < 100; i++) {} // 짧은 딜레이
-    GPIOB->PDOR &= ~(1 << TRIG_PIN); // 트리거 핀 Low (0)
+volatile uint32_t start_time = 0;  // 초음파 발사 후 Echo 핀 rising edge 시점
+volatile uint32_t end_time = 0;    // Echo 핀 falling edge 시점
+volatile uint32_t pulse_duration = 0;  // Echo 핀에서의 high 상태 지속 시간
+volatile uint32_t last_trigger_time = 0; // 마지막 초음파 발사 시간 (60ms 대기)
+
+void PORT_init(void)
+{
+    // Trigger 핀 출력, Echo 핀 입력
+    PTD->PDDR |= (1 << TRIGGER_PIN);  // Trigger 핀 설정 (출력)
+    PTD->PDDR &= ~(1 << ECHO_PIN);    // Echo 핀 설정 (입력)
+
+    // Trigger 핀 초기화 (low 상태)
+    PTD->PCOR |= (1 << TRIGGER_PIN);  // Trigger 핀 low로 설정
+
+    // Echo 핀의 Interrupt 설정 (rising edge 및 falling edge)
+    PORTD->PCR[ECHO_PIN] |= PORT_PCR_MUX(1);  // GPIO 모드로 설정
+    PORTD->PCR[ECHO_PIN] |= (10 << 16);  // Interrupt on rising and falling edge
 }
 
-// 에코 핀에서 높을 때의 시간을 측정하여 거리 계산
-uint32_t measure_distance(void) {
-    uint32_t pulse_width = 0;
-
-    // 에코 핀이 High로 변할 때까지 대기
-    while (!(GPIOB->PDIR & (1 << ECHO_PIN))) {} // 에코 핀이 High로 변할 때까지 대기
-    uint32_t start_time = SysTick->VAL; // 시작 시간 저장
-
-    // 에코 핀이 Low로 변할 때까지 대기
-    while (GPIOB->PDIR & (1 << ECHO_PIN)) {} // 에코 핀이 Low로 변할 때까지 대기
-    uint32_t end_time = SysTick->VAL; // 끝 시간 저장
-
-    // 초음파의 왕복 시간 계산 (SysTick을 사용하여 시간 측정)
-    pulse_width = start_time - end_time;
-
-    // 왕복 시간을 이용하여 거리를 계산 (343 m/s, 1cm = 1us에서 0.0343cm/us)
-    uint32_t distance = (pulse_width * 0.0343) / 2; // cm 단위로 계산
-
-    return distance;
+void PORTD_IRQHandler(void)
+{
+    if (PORTD->ISFR & (1 << ECHO_PIN)) {
+        if ((PTD->PDIR & (1 << ECHO_PIN)) != 0) {  // rising edge
+            start_time = LPIT0->TMR[0].TCR;  // Timer를 사용하여 시간을 측정
+        } else {  // falling edge
+            end_time = LPIT0->TMR[0].TCR;
+            pulse_duration = end_time - start_time;  // 초음파 왕복 시간 계산
+            // 초음파 거리를 계산 (340 m/s = 0.034 cm/μs)
+            uint32_t distance = (pulse_duration * 0.034) / 2;
+            // 거리 계산 후 처리 (예: 결과를 출력하거나 저장)
+        }
+    }
+    PORTD->ISFR |= (1 << ECHO_PIN);  // Interrupt Flag 클리어
 }
 
-int main(void) {
-    uint32_t distance = 0;
+void trigger_pulse(void)
+{
+    // 60ms 이상의 시간 간격을 두고 초음파 발사
+    uint32_t current_time = LPIT0->TMR[0].TCR;
+    if (current_time - last_trigger_time >= 60000) {  // 60ms 경과 후
+        PTD->PSOR |= (1 << TRIGGER_PIN);  // Trigger 핀을 high로 설정
+        delay_us(10);  // 10us 동안 high로 유지
+        PTD->PCOR |= (1 << TRIGGER_PIN);  // Trigger 핀을 low로 설정
+        last_trigger_time = current_time;  // 마지막 발사 시간 기록
+    }
+}
 
-    // 포트 및 핀 설정 (예: GPIO 포트 설정)
-    // GPIO 설정을 사용해 TRIG_PIN을 출력, ECHO_PIN을 입력으로 설정해야 함
+void delay_us(uint32_t us)
+{
+    // 대기 시간: 마이크로초 단위
+    uint32_t count = us * 40;  // 40MHz 시스템 클럭을 기준으로 대기
+    while (count--) {
+        __asm("NOP");  // No operation (빈 명령어)
+    }
+}
+
+int main(void)
+{
+    WDOG_disable();     // Watchdog 비활성화
+    PORT_init();        // 포트 초기화
+    SOSC_init_8MHz();   // 8MHz 시스템 오실레이터 초기화
+    SPLL_init_160MHz(); // SPLL을 160MHz로 초기화
+    NormalRUNmode_80MHz();  // 시스템 클럭 80MHz, 코어 클럭 80MHz 설정
 
     while (1) {
-        send_trigger_pulse();  // 초음파 발사
-        distance = measure_distance();  // 거리 측정
-        // 측정된 거리 출력 (예: UART, LCD, LED 등으로 출력)
+        trigger_pulse();  // 초음파 발사
+        delay_ms(50);     // 50ms 대기 후 반복
     }
-
-    return 0;
 }
