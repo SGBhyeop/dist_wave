@@ -5,41 +5,41 @@ int lpit0_ch0_flag_counter = 0; /*< LPIT0 timeout counter */
 
 void LPIT0_init (uint32_t delay)
 {
-   uint32_t timeout;
-
+	uint32_t timeout;
+	
 	/*!
-	    * LPIT Clocking:
-	    * ==============================
-	    */
-	  PCC->PCCn[PCC_LPIT_INDEX] = PCC_PCCn_PCS(6);    /* Clock Src = 6 (SPLL2_DIV2_CLK)*/
-	  PCC->PCCn[PCC_LPIT_INDEX] |= PCC_PCCn_CGC_MASK; /* Enable clk to LPIT0 regs       */
-
-	  /*!
-	   * LPIT Initialization:
-	   */
-	  LPIT0->MCR |= LPIT_MCR_M_CEN_MASK;  /* DBG_EN-0: Timer chans stop in Debug mode */
-	                                        /* DOZE_EN=0: Timer chans are stopped in DOZE mode */
-	                                        /* SW_RST=0: SW reset does not reset timer chans, regs */
-	                                        /* M_CEN=1: enable module clk (allows writing other LPIT0 regs) */
-
-  timeout=delay* 40;
-  LPIT0->TMR[0].TVAL = timeout;      /* Chan 0 Timeout period: 40M clocks */
-  LPIT0->TMR[0].TCTRL |= LPIT_TMR_TCTRL_T_EN_MASK;
-                                     /* T_EN=1: Timer channel is enabled */
-                              /* CHAIN=0: channel chaining is disabled */
-                              /* MODE=0: 32 periodic counter mode */
-                              /* TSOT=0: Timer decrements immediately based on restart */
-                              /* TSOI=0: Timer does not stop after timeout */
-                              /* TROT=0 Timer will not reload on trigger */
-                              /* TRG_SRC=0: External trigger soruce */
-                              /* TRG_SEL=0: Timer chan 0 trigger source is selected*/
+	* LPIT Clocking:
+	* ==============================
+	*/
+	PCC->PCCn[PCC_LPIT_INDEX] = PCC_PCCn_PCS(6);    /* Clock Src = 6 (SPLL2_DIV2_CLK)*/
+	PCC->PCCn[PCC_LPIT_INDEX] |= PCC_PCCn_CGC_MASK; /* Enable clk to LPIT0 regs       */
+	
+	/*!
+	* LPIT Initialization:
+	*/
+	LPIT0->MCR |= LPIT_MCR_M_CEN_MASK;  /* DBG_EN-0: Timer chans stop in Debug mode */
+					/* DOZE_EN=0: Timer chans are stopped in DOZE mode */
+					/* SW_RST=0: SW reset does not reset timer chans, regs */
+					/* M_CEN=1: enable module clk (allows writing other LPIT0 regs) */
+	
+	timeout=delay* 40;
+	LPIT0->TMR[0].TVAL = timeout;      /* Chan 0 Timeout period: 40M clocks */
+	LPIT0->TMR[0].TCTRL |= LPIT_TMR_TCTRL_T_EN_MASK;
+			     /* T_EN=1: Timer channel is enabled */
+		      /* CHAIN=0: channel chaining is disabled */
+		      /* MODE=0: 32 periodic counter mode */
+		      /* TSOT=0: Timer decrements immediately based on restart */
+		      /* TSOI=0: Timer does not stop after timeout */
+		      /* TROT=0 Timer will not reload on trigger */
+		      /* TRG_SRC=0: External trigger soruce */
+		      /* TRG_SEL=0: Timer chan 0 trigger source is selected*/
 }
 
 void delay_us (volatile int us){
-   LPIT0_init(us);           /* Initialize PIT0 for 1 second timeout  */
-   while (0 == (LPIT0->MSR & LPIT_MSR_TIF0_MASK)) {} /* Wait for LPIT0 CH0 Flag */
-               lpit0_ch0_flag_counter++;         /* Increment LPIT0 timeout counter */
-               LPIT0->MSR |= LPIT_MSR_TIF0_MASK; /* Clear LPIT0 timer flag 0 */
+	LPIT0_init(us);           /* Initialize PIT0 for 1 second timeout  */
+	while (0 == (LPIT0->MSR & LPIT_MSR_TIF0_MASK)) {} /* Wait for LPIT0 CH0 Flag */
+	lpit0_ch0_flag_counter++;         /* Increment LPIT0 timeout counter */
+	LPIT0->MSR |= LPIT_MSR_TIF0_MASK; /* Clear LPIT0 timer flag 0 */
 }
 
 void FTM_init (void){
@@ -47,7 +47,7 @@ void FTM_init (void){
 	//FTM0 clocking
 	PCC->PCCn[PCC_FTM0_INDEX] &= ~PCC_PCCn_CGC_MASK;		//Ensure clk diabled for config
 	PCC->PCCn[PCC_FTM0_INDEX] |= PCC_PCCn_PCS(0b010)		//Clocksrc=1, 8MHz SIRCDIV1_CLK
-								| PCC_PCCn_CGC_MASK;		//Enable clock for FTM regs
+					| PCC_PCCn_CGC_MASK;		//Enable clock for FTM regs
 
 //FTM0 Initialization
 	FTM0->SC = FTM_SC_PWMEN1_MASK							//Enable PWM channel 1output
@@ -80,8 +80,8 @@ void FTM0_CH1_PWM (int i){//uint32_t i){
 void PORT_init (void)
 {
 	/*D16 -> C1 change  */
-  PCC->PCCn[PCC_PORTC_INDEX ]|=PCC_PCCn_CGC_MASK;   /* Enable clock for PORTD */
-  PORTD->PCR[1]|=PORT_PCR_MUX(2);           		/* Port D16: MUX = ALT2, FTM0CH1 */
+	PCC->PCCn[PCC_PORTC_INDEX ]|=PCC_PCCn_CGC_MASK;   /* Enable clock for PORTD */
+	PORTD->PCR[1]|=PORT_PCR_MUX(2);           		/* Port D16: MUX = ALT2, FTM0CH1 */
 }
 
 int main(void)
@@ -94,15 +94,15 @@ int main(void)
 	FTM_init();
 	ADC_init();            /* Init ADC resolution 12 bit			*/
 	PORT_init();           /* Configure ports */
-	  for(;;)
-	  {
-    	  convertAdcChan(13);                   /* Convert Channel AD12 to pot on EVB 	*/
-    	  while(adc_complete()==0){}            /* Wait for conversion complete flag 	*/
-    	  adcResultInMv = read_adc_chx();       /* Get channel's conversion results in mv */
-	  D=adcResultInMv*1.6;						/* 5000*1.6=8000*/
-	  if(D>6000) D=8000;
-	  FTM0_CH1_PWM(D);
-
-	  }
+	for(;;)
+	{
+	convertAdcChan(13);                   /* Convert Channel AD12 to pot on EVB 	*/
+	while(adc_complete()==0){}            /* Wait for conversion complete flag 	*/
+	adcResultInMv = read_adc_chx();       /* Get channel's conversion results in mv */
+	D=adcResultInMv*1.6;						/* 5000*1.6=8000*/
+	if(D>6000) D=8000;
+	FTM0_CH1_PWM(D);
+	
+	}
 
 }
