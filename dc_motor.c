@@ -81,7 +81,7 @@ void PORT_init (void)
 {
 	/*D16 -> C1 change  */
 	PCC->PCCn[PCC_PORTC_INDEX ]|=PCC_PCCn_CGC_MASK;   /* Enable clock for PORTD */
-	PORTC->PCR[1]|=PORT_PCR_MUX(2);           		/* Port D16: MUX = ALT2, FTM0CH1 */
+	PORTC->PCR[1]|=PORT_PCR_MUX(2);    /* Port D16을 C1로 바꿈 FTM0CH1 */
 }
 
 int main(void)
