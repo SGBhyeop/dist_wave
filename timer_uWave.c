@@ -17,13 +17,12 @@ void WDOG_disable (void)
 
 void PORT_init (void)
 {
-	// 특정 핀 (예: PTD0)을 입력, ECHO 핀에 rising, falling 들어온다 가정 
+	// 특정 핀 (예: PTE0)을 입력, ECHO 핀에 rising, falling 들어온다 가정 
 	PCC->PCCn[PCC_PORTE_INDEX] |= PCC_PCCn_CGC_MASK;  // Port E의 클럭을 활성화
-	PORTE->PCR[ECHO_PIN0] = PORT_PCR_MUX(1) | (9<16);  // PTD0: GPIO로 설정, rising edge에서 인터럽트 발생
-	PORTE->PCR[ECHO_PIN1] = PORT_PCR_MUX(1) | (10<16);  // PTD0: GPIO로 설정, falling edge에서 인터럽트 발생
-	PTE->PDDR &= ~(1<<ECHO_PIN0);  // PTD0를 입력으로 설정
-	PTE->PDDR &= ~(1<<ECHO_PIN1);  // PTD0를 입력으로 설정
-	PCC-> PCCn[PCC_PORTD_INDEX] = PCC_PCCn_CGC_MASK; /* Enable clock for PORT E */
+	PORTE->PCR[ECHO_PIN0] = PORT_PCR_MUX(1) | (9<16);  // PTE0: GPIO로 설정, rising edge에서 인터럽트 발생
+	PORTE->PCR[ECHO_PIN1] = PORT_PCR_MUX(1) | (10<16);  // PTE1: GPIO로 설정, falling edge에서 인터럽트 발생
+	PTE->PDDR &= ~(1<<ECHO_PIN0);  // PTE0를 입력으로 설정
+	PTE->PDDR &= ~(1<<ECHO_PIN1);  // PTE1를 입력으로 설정
 }
 
 void NVIC_init_IRQs(void)
@@ -101,7 +100,9 @@ int main(void)
 	LPIT0_init();
 	
 	while(1);
-	int dist = 100; //cm?
-	dist = 
-	if (
+	float dist = 100.0; //cm?
+	dist = 0.01715* pulse_width; 
+	if (dist<20) // 너무 가까우면 
+		;
+	else 
 }
