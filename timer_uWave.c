@@ -1,12 +1,16 @@
 #include "device_registers.h"            /* include peripheral declarations S32K144 */
 #include "clocks_and_modes.h"
 
+#define TRIGGER_PIN 3   // Trigger 핀 (PTE3)
+#define ECHO_PIN0 0      // Echo 핀0 (PTE1)
+#define ECHO_PIN1 1 //Echo 핀1
+
 int lpit0_ch0_flag_counter = 0; /*< LPIT0 timeout counter */
 int lpit0_ch1_flag_counter = 0; /*< LPIT0 timeout counter */
 volatile uint32_t start_time = 0;  // Rising edge 발생 시간
 volatile uint32_t end_time = 0;    // Falling edge 발생 시간
 volatile uint32_t pulse_width = 0;
-unsigned int num = 0;
+unsigned int num, count = 0;
 
 void WDOG_disable (void)
 {
@@ -23,13 +27,17 @@ void PORT_init (void)
 	PORTE->PCR[ECHO_PIN1] = PORT_PCR_MUX(1) | (10<16);  // PTE1: GPIO로 설정, falling edge에서 인터럽트 발생
 	PTE->PDDR &= ~(1<<ECHO_PIN0);  // PTE0를 입력으로 설정
 	PTE->PDDR &= ~(1<<ECHO_PIN1);  // PTE1를 입력으로 설정
+	
+	PORTE->PCR[ECHO_PIN1] = PORT_PCR_MUX(1);  // PTE1: GPIO로 설정, falling edge에서 인터럽트 발생
+	PTE->PDDR |= (1<<TRIGGER_PIN);  // PTE3를 출력으로 설정
+	
 }
 
 void NVIC_init_IRQs(void)
 {
-	//포트 E 인터럽트 활성화 코드 추가 필요
-
-
+	S32_NVIC->ICPR[1] |= 1<<(63%32); // Clear any pending IRQ61
+	S32_NVIC->ISER[1] |= 1<<(63%32); // Enable IRQ61
+	S32_NVIC->IP[61] =0xB; //Priority 11 of 15
 	
 	/*LPIT ch0 overflow set*/
 	S32_NVIC->ICPR[1] |= 1 << (48 % 32);
@@ -42,8 +50,7 @@ void NVIC_init_IRQs(void)
 }
 
 void LPIT0_init()
-{
-	
+{	
 	PCC->PCCn[PCC_LPIT_INDEX] = PCC_PCCn_PCS(6);   
 	PCC->PCCn[PCC_LPIT_INDEX] |= PCC_PCCn_CGC_MASK; 
 	LPIT0->MCR = 0x00000001; 
@@ -52,7 +59,7 @@ void LPIT0_init()
 	LPIT0->TMR[0].TVAL = 40;      // 1us 마다 인터럽트 발생하도록
 	LPIT0->TMR[0].TCTRL = 0x00000001;
 	
-	LPIT0->TMR[1].TVAL = 40000;      /* Chan 1 Timeout period: 40M clocks */
+	LPIT0->TMR[1].TVAL = 40000;      // 1ms 마다 인터럽트 발생? 
 	LPIT0->TMR[1].TCTRL = 0x00000001;
 }
 
@@ -78,7 +85,16 @@ void PORTE_IRQHandler(void)
 
 void LPIT0_Ch1_IRQHandler (void)
 {	  /* delay counter */
-	
+	count++;
+	if(count>65){
+		PTE->PSOR |= (1<<TRIGGER_PIN);
+		int delay = num;
+		while(num>delay+10){}
+		PTE->PCOR |= (1<<TRIGGER_PIN);
+	}
+
+	lpit0_ch1_flag_counter++;         /* Increment LPIT1 timeout counter */
+	LPIT0->MSR |= LPIT_MSR_TIF1_MASK;  /* Clear LPIT0 timer flag 1 */
 }
 
 void LPIT0_Ch0_IRQHandler (void)
