@@ -69,14 +69,14 @@ void PORTE_IRQHandler(void)
 	PORTE->PCR[ECHO_PIN1] &= ~(0x01000000); // Port Control Register ISF bit '0' set
 	
 	//PORTC_Interrupt State Flag Register Read
-	if((PORTC->ISFR & (1<<ECHO_PIN0)) != 0){ //rising edge 일떄
+	if((PORTE->ISFR & (1<<ECHO_PIN0)) != 0){ //rising edge 일떄
 		start_time = num;
 	}
-	else if((PORTC->ISFR & (1<<ECHO_PIN1)) != 0){ //falling 일때
+	else if((PORTE->ISFR & (1<<ECHO_PIN1)) != 0){ //falling 일때
 		if(num>start_time)
 			pulse_width = num - start_time;
 		else
-			pulse_width = 4294967295 + num - start_time;
+			pulse_width = 0xFFFFFFFF + num - start_time + 1;
 	}
 	// 인터럽트 플래그 클리어
 	PORTE->PCR[ECHO_PIN0] |= 0x01000000; // ISF 비트 1
@@ -100,7 +100,6 @@ void LPIT0_Ch1_IRQHandler (void)
 void LPIT0_Ch0_IRQHandler (void)
 {
 	num++;
-	
 	lpit0_ch0_flag_counter++;         /* Increment LPIT0 timeout counter */
 	LPIT0->MSR |= LPIT_MSR_TIF0_MASK;  /* Clear LPIT0 timer flag 0 */
 }
@@ -115,9 +114,12 @@ int main(void)
 	NVIC_init_IRQs();       /* Enable desired interrupts and priorities */
 	LPIT0_init();
 	
-	while(1);
-	float dist = 100.0; //cm?
-	dist = 0.01715* pulse_width; 
+	while(1){
+		if(pulse_width > 0){
+			float dist = 0.01715* pulse_width; 
+			pulse_width = 0;
+		}
+	}
 	// if (dist<20) // 너무 가까우면 
 	// 	;
 	// else 
