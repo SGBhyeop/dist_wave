@@ -1,9 +1,9 @@
 #include "device_registers.h"            /* include peripheral declarations S32K144 */
 #include "clocks_and_modes.h"
 
-#define TRIGGER_PIN 3   // Trigger 핀 (PTE3)
-#define ECHO_PIN0 0      // Echo 핀0 (PTE1)
-#define ECHO_PIN1 1 //Echo 핀1
+#define TRIGGER_PIN 3
+#define ECHO_PIN0 0 
+#define ECHO_PIN1 1
 
 int lpit0_ch0_flag_counter = 0; /*< LPIT0 timeout counter */
 int lpit0_ch1_flag_counter = 0; /*< LPIT0 timeout counter */
