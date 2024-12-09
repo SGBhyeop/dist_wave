@@ -3,6 +3,8 @@
 
 int lpit0_ch0_flag_counter = 0; /*< LPIT0 timeout counter */
 int lpit0_ch1_flag_counter = 0; /*< LPIT0 timeout counter */
+volatile uint32_t start_time = 0;  // Rising edge 발생 시간
+volatile uint32_t end_time = 0;    // Falling edge 발생 시간
 unsigned int num = 0;
 
 void WDOG_disable (void)
