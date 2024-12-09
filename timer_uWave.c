@@ -118,7 +118,7 @@ int main(void)
 	while(1);
 	float dist = 100.0; //cm?
 	dist = 0.01715* pulse_width; 
-	if (dist<20) // 너무 가까우면 
-		;
-	else 
+	// if (dist<20) // 너무 가까우면 
+	// 	;
+	// else 
 }
