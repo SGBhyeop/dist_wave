@@ -68,11 +68,16 @@ void PORTE_IRQHandler(void)
 	PORTE->PCR[ECHO_PIN0] &= ~(0x01000000); // Port Control Register ISF bit '0' set
 	PORTE->PCR[ECHO_PIN1] &= ~(0x01000000); // Port Control Register ISF bit '0' set
 	
-	//PORTC_Interrupt State Flag Register Read
+	//PORTE_Interrupt State Flag Register Read
 	if((PORTE->ISFR & (1<<ECHO_PIN0)) != 0){ //rising edge 일떄
 		start_time = num;
+		//start_time = LPIT0->TMR[0].CVAL; 현재 타이머 값 직접 캡처
 	}
 	else if((PORTE->ISFR & (1<<ECHO_PIN1)) != 0){ //falling 일때
+		//end_time = LPIT0->TMR[0].CVAL;
+		pulse_width = (start_time > end_time) ? 
+                      (start_time - end_time) : 
+                      (0xFFFFFFFF - end_time + start_time);
 		if(num>start_time)
 			pulse_width = num - start_time;
 		else
