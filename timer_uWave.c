@@ -96,8 +96,8 @@ void LPIT0_Ch1_IRQHandler (void)
 		int delay = num;
 		while(num<delay+11){}
 		PTE->PCOR |= (1<<TRIGGER_PIN);
+		count = 0;
 	}
-	count = 0;
 
 	lpit0_ch1_flag_counter++;         /* Increment LPIT1 timeout counter */
 	LPIT0->MSR |= LPIT_MSR_TIF1_MASK;  /* Clear LPIT0 timer flag 1 */
