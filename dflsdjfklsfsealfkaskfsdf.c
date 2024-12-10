@@ -5,12 +5,10 @@
 #define ECHO_PIN0 0 
 #define ECHO_PIN1 1
 int lpit0_ch0_flag_counter = 0; /*< LPIT0 timeout counter */
+int lpit0_ch1_flag_counter = 0; /*< LPIT0 timeout counter */
 
-/*num is Counting value, num0 is '1', num2 is '10', num2 is '100', num3 is '1000'*/
-//unsigned int External_PIN=0; /* External_PIN:SW External input Assignment */
 char MODE = 'N';
 unsigned int Dtime = 0; /* Delay Time Setting Variable*/
-int lpit0_ch1_flag_counter = 0; /*< LPIT0 timeout counter */
 volatile uint32_t start_time = 0;  // Rising edge 발생 시간
 volatile uint32_t end_time = 0;    // Falling edge 발생 시간
 volatile uint32_t pulse_width = 0;
@@ -22,6 +20,7 @@ void PORT_init (void)
 	PCC->PCCn[PCC_PORTC_INDEX]|=PCC_PCCn_CGC_MASK;   /* Enable clock for PORTC */
 	PCC->PCCn[PCC_PORTD_INDEX]|=PCC_PCCn_CGC_MASK;   /* Enable clock for PORTD */
 	PCC->PCCn[PCC_PORTE_INDEX]|=PCC_PCCn_CGC_MASK;   /* Enable clock for PORTD */
+    
 	
 	//PortC,D Data Direction Set
 	PTC->PDDR &= ~(1<<11);		/* Port C11 Port Input set, value '0'*/
@@ -44,15 +43,20 @@ void PORT_init (void)
 	PORTD->PCR[15] |= PORT_PCR_MUX(1); // Port C12 mux = GPIO
 	PORTD->PCR[16] |= PORT_PCR_MUX(1); // Port C12 mux = GPIO
 
-  PORTC->PCR[1]|=PORT_PCR_MUX(2);    /* Port D16을 C1로 바꿈 FTM0CH1 */
+    PORTC->PCR[1]|=PORT_PCR_MUX(2);    /* Port D16을 C1로 바꿈 FTM0CH1 */
 	PORTC->PCR[0]|=PORT_PCR_MUX(2); /*아마도 포트C 0핀을 출력으로 */
 
     PORTE->PCR[ECHO_PIN0] = PORT_PCR_MUX(1) | (9<16);  // PTE0: GPIO로 설정, rising edge에서 인터럽트 발생
 	PORTE->PCR[ECHO_PIN1] = PORT_PCR_MUX(1) | (10<16);  // PTE1: GPIO로 설정, falling edge에서 인터럽트 발생
     PTE->PDDR &= ~(1<<ECHO_PIN0);  // PTE0를 입력으로 설정
 	PTE->PDDR &= ~(1<<ECHO_PIN1);  // PTE1를 입력으로 설정
-	
+    
+    PORTE->PCR[TRGGER_PIN] = PORT_PCR_MUX(1);  // PTE1: GPIO로 설정, falling edge에서 인터럽트 발생
     PTE->PDDR |= (1<<TRIGGER_PIN);  // PTE3를 출력으로 설정
+
+    //테스트용 출력
+    PORTE->PCR[14] |=PORT_PCR_MUX(1);
+    PTE->PDDR |= (1<<14);
 
 }
 void WDOG_disable (void)
@@ -80,7 +84,7 @@ void LPIT0_init (uint32_t delay)
 					/* SW_RST=0: SW reset does not reset timer chans, regs */
 					/* M_CEN=1: enable module clk (allows writing other LPIT0 regs) */
 	
-	timeout=delay* 40;
+	timeout=delay* 40000;
 	LPIT0->TMR[0].TVAL = timeout;      /* Chan 0 Timeout period: 40M clocks */
 	LPIT0->TMR[0].TCTRL |= LPIT_TMR_TCTRL_T_EN_MASK;
 			      /* T_EN=1: Timer channel is enabled */
@@ -91,17 +95,17 @@ void LPIT0_init (uint32_t delay)
 			      /* TROT=0 Timer will not reload on trigger */
 			      /* TRG_SRC=0: External trigger soruce */
 			      /* TRG_SEL=0: Timer chan 0 trigger source is selected*/
-    LPIT0->TMR[1].TVAL = 40;      // 60ms 마다 인터럽트 발생? 
+    LPIT0->TMR[1].TVAL = 40;      // 1us 마다 인터럽트 발생? 
 	LPIT0->TMR[1].TCTRL = 0x00000001;
 }
-void LPIT0_Ch1_IRQHandler (void) // 60ms 마다
+void LPIT0_Ch1_IRQHandler (void) // 1us마다
 {	  /* delay counter */
 	num++;
 	lpit0_ch1_flag_counter++;         /* Increment LPIT1 timeout counter */
 	LPIT0->MSR |= LPIT_MSR_TIF1_MASK;  /* Clear LPIT0 timer flag 1 */
 }
-void delay_us (volatile int us){
-	LPIT0_init(us);           /* Initialize PIT0 for 1 second timeout  */
+void delay_ms (volatile int ms){
+	LPIT0_init(ms);           /* Initialize PIT0 for 1 second timeout  */
 	while (0 == (LPIT0->MSR & LPIT_MSR_TIF0_MASK)) {} /* Wait for LPIT0 CH0 Flag */
 	lpit0_ch0_flag_counter++;         /* Increment LPIT0 timeout counter */
 	LPIT0->MSR |= LPIT_MSR_TIF0_MASK; /* Clear LPIT0 timer flag 0 */
@@ -113,10 +117,10 @@ void PORTE_IRQHandler(void)
 	
 	//PORTE_Interrupt State Flag Register Read
 	if((PORTE->ISFR & (1<<ECHO_PIN0)) != 0){ //rising edge 일때
-		start_time = LPIT0->TMR[0].CVAL; //현재 타이머 값 직접 캡처
+		start_time = num; //현재 타이머 값 직접 캡처
 	}
 	else if((PORTE->ISFR & (1<<ECHO_PIN1)) != 0){ //falling 일때
-		end_time = LPIT0->TMR[0].CVAL;
+		end_time = num;
 		pulse_width = (start_time > end_time) ? 
                       (start_time - end_time) : 
                       (0xFFFFFFFF - end_time + start_time);
@@ -131,11 +135,11 @@ void NVIC_init_IRQs(void){
 	S32_NVIC->ISER[1] |= 1<<(61%32); // Enable IRQ61
 	S32_NVIC->IP[61] =0xB; //Priority 11 of 15
 
-    S32_NVIC->ICPR[1] |= 1<<(63%32); // Clear any pending IRQ61
-	S32_NVIC->ISER[1] |= 1<<(63%32); // Enable IRQ61
+    S32_NVIC->ICPR[1] |= 1<<(63%32); // 포트E 인터럽트 활성화
+	S32_NVIC->ISER[1] |= 1<<(63%32);
 	S32_NVIC->IP[63] =0xB; //Priority 11 of 15
 
-    S32_NVIC->ICPR[1] |= 1 << (49 % 32);
+    S32_NVIC->ICPR[1] |= 1 << (49 % 32); // 채널1 활성화 
 	S32_NVIC->ISER[1] |= 1 << (49 % 32);
 	S32_NVIC->IP[49] = 0x0B;
 }
@@ -192,8 +196,6 @@ void FTM0_CH0_PWM (int i){//uint32_t i){
 	FTM0->SC|=FTM_SC_CLKS(3);
 }
 
-
-
 int main(void)
 {
   uint32_t adcResultInMv=0;	/*< ADC0 Result in miliVolts */
@@ -204,35 +206,40 @@ int main(void)
 	SPLL_init_160MHz();     /* Initialize SPLL to 160 MHz with 8 MHz SOSC */
 	NormalRUNmode_80MHz();  /* Init clocks: 80 MHz sysclk & core, 40 MHz bus, 20 MHz flash */
 	NVIC_init_IRQs(); /*Interrupt Pending, Endable, Priority Set*/
-  FTM_init();
+    FTM_init();
 	ADC_init();
   
 	Dtime = 500; // Delay Reset Value
+  
 	while(1){ /* Loop Start*/
-    convertAdcChan(13);                   /* Convert Channel AD12 to pot on EVB 	*/
+    convertAdcChan(13);                   /* Convert Channel AD13 to pot on EVB 	*/
 		while(adc_complete()==0){}            /* Wait for conversion complete flag 	*/
 		adcResultInMv = read_adc_chx();       /* Get channel's conversion results in mv */
 		D=adcResultInMv*1.6;						/* 5000*1.6=8000*/
 		if(D>6000) D=8000;
 
-        if (count > 6){
-            PTE->PSOR |= 1<<3; // 트리거 high
+        if (count > 100){
+            PTE->PSOR |= 1<<3; // 1ms 동안 트리거 high
             count = 0;
         }
-		delay_us(10); // 일정시간 대기
+		delay_ms(1); // 일정시간 대기
         count++;
         PTE->PCOR |= 1<<3; // 트리거 low 
 
+        if(pulse_width/58 < 30) // 가까우면 E14 0출력하기 
+            PTE->PCOR |= 1<<14;
+        else
+            PTE->PTOR |= 1<<14;
 
 		if(MODE == 'D'){
 		PTD->PCOR |= 1<<0; //Blue LED
 		PTD->PSOR |= 1<<15|1<<16;
-    FTM0_CH1_PWM(D);
+        FTM0_CH1_PWM(D);
 		}
 		else if(MODE == 'R'){
 		PTD->PCOR |= 1<<15; //Red LED
 		PTD->PSOR |= 1<<0|1<<16;
-    FTM0_CH0_PWM(D);
+        FTM0_CH0_PWM(D);
 		}
 		else{
 		PTD->PCOR |= 1<<16;// Green LED
