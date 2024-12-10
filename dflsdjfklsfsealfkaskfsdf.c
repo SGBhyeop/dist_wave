@@ -203,7 +203,7 @@ int main(void)
 	ADC_init();
   
 	Dtime = 500; // Delay Reset Value
-  
+  	int count = 0;
 	while(1){ /* Loop Start*/
     convertAdcChan(13);                   /* Convert Channel AD12 to pot on EVB 	*/
 		while(adc_complete()==0){}            /* Wait for conversion complete flag 	*/
