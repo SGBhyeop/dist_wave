@@ -12,7 +12,8 @@ unsigned int Dtime = 0; /* Delay Time Setting Variable*/
 volatile uint32_t start_time = 0;  // Rising edge 발생 시간
 volatile uint32_t end_time = 0;    // Falling edge 발생 시간
 volatile uint32_t pulse_width = 0;
-unsigned int num, count = 0;
+volatile uint32_t num = 0;
+unsigned int count = 0;
 
 void PORT_init (void)
 {
