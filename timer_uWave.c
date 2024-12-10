@@ -126,7 +126,7 @@ int main(void)
 			while(LPIT0->TMR[0].CVAL < i +10){
 				PTE->PSOR |= (1<<TRIGGER_PIN);
 			}
-			PTE->PSOR |= (1<TRIGGER_PIN);
+			PTE->PCOR |= (1<TRIGGER_PIN);
 		}
 			
 	}
