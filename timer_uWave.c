@@ -69,19 +69,14 @@ void PORTE_IRQHandler(void)
 	PORTE->PCR[ECHO_PIN1] &= ~(0x01000000); // Port Control Register ISF bit '0' set
 	
 	//PORTE_Interrupt State Flag Register Read
-	if((PORTE->ISFR & (1<<ECHO_PIN0)) != 0){ //rising edge 일떄
-		start_time = num;
-		//start_time = LPIT0->TMR[0].CVAL; 현재 타이머 값 직접 캡처
+	if((PORTE->ISFR & (1<<ECHO_PIN0)) != 0){ //rising edge 일때
+		start_time = LPIT0->TMR[0].CVAL; //현재 타이머 값 직접 캡처
 	}
 	else if((PORTE->ISFR & (1<<ECHO_PIN1)) != 0){ //falling 일때
-		//end_time = LPIT0->TMR[0].CVAL;
+		end_time = LPIT0->TMR[0].CVAL;
 		pulse_width = (start_time > end_time) ? 
                       (start_time - end_time) : 
                       (0xFFFFFFFF - end_time + start_time);
-		if(num>start_time)
-			pulse_width = num - start_time;
-		else
-			pulse_width = 0xFFFFFFFF + num - start_time + 1;
 	}
 	// 인터럽트 플래그 클리어
 	PORTE->PCR[ECHO_PIN0] |= 0x01000000; // ISF 비트 1
@@ -90,6 +85,7 @@ void PORTE_IRQHandler(void)
 
 void LPIT0_Ch1_IRQHandler (void)
 {	  /* delay counter */
+	
 	count++;
 	if(count>65){
 		PTE->PSOR |= (1<<TRIGGER_PIN);
@@ -125,6 +121,14 @@ int main(void)
 			float dist = 0.01715* pulse_width; 
 			pulse_width = 0;
 		}
+		if(LPIT0->TMR[1].CVAL / 60 == 0){
+			int i = LPIT0->TMR[0].CVAL;
+			while(LPIT0->TMR[0].CVAL < i +10){
+				PTE->PSOR |= (1<<TRIGGER_PIN);
+			}
+			PTE->PSOR |= (1<TRIGGER_PIN);
+		}
+			
 	}
 	// if (dist<20) // 너무 가까우면 
 	// 	;
