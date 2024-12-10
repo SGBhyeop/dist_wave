@@ -10,6 +10,11 @@ int lpit0_ch0_flag_counter = 0; /*< LPIT0 timeout counter */
 //unsigned int External_PIN=0; /* External_PIN:SW External input Assignment */
 char MODE = 'N';
 unsigned int Dtime = 0; /* Delay Time Setting Variable*/
+int lpit0_ch1_flag_counter = 0; /*< LPIT0 timeout counter */
+volatile uint32_t start_time = 0;  // Rising edge 발생 시간
+volatile uint32_t end_time = 0;    // Falling edge 발생 시간
+volatile uint32_t pulse_width = 0;
+unsigned int num, count = 0;
 
 void PORT_init (void)
 {
@@ -203,7 +208,6 @@ int main(void)
 	ADC_init();
   
 	Dtime = 500; // Delay Reset Value
-  	int count = 0;
 	while(1){ /* Loop Start*/
     convertAdcChan(13);                   /* Convert Channel AD12 to pot on EVB 	*/
 		while(adc_complete()==0){}            /* Wait for conversion complete flag 	*/
