@@ -128,6 +128,15 @@ int main(void)
 			}
 			PTE->PCOR |= (1<TRIGGER_PIN);
 		}
+		int i = LPIT0->TMR[0].CVAL;
+		
+		while((LPIT0->TMR[0].CVAL < i +500)&(LPIT0->TMR[0].CVAL > i)){
+			PTE->PSOR |= (1<<TRIGGER_PIN);
+		}
+		i = LPIT0->TMR[0].CVAL;
+		while((LPIT0->TMR[0].CVAL < i +500)&(LPIT0->TMR[0].CVAL > i)){
+			PTE->PCOR |= (1<TRIGGER_PIN);
+		}
 			
 	}
 	// if (dist<20) // 너무 가까우면 
