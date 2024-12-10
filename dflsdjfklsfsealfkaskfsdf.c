@@ -16,6 +16,7 @@ void PORT_init (void)
 	  //PORTC,D Data Clock Set
 	PCC->PCCn[PCC_PORTC_INDEX]|=PCC_PCCn_CGC_MASK;   /* Enable clock for PORTC */
 	PCC->PCCn[PCC_PORTD_INDEX]|=PCC_PCCn_CGC_MASK;   /* Enable clock for PORTD */
+	PCC->PCCn[PCC_PORTE_INDEX]|=PCC_PCCn_CGC_MASK;   /* Enable clock for PORTD */
 	
 	//PortC,D Data Direction Set
 	PTC->PDDR &= ~(1<<11);		/* Port C11 Port Input set, value '0'*/
