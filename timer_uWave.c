@@ -121,13 +121,7 @@ int main(void)
 			float dist = 0.01715* pulse_width; 
 			pulse_width = 0;
 		}
-		if(LPIT0->TMR[1].CVAL / 60 == 0){
-			int i = LPIT0->TMR[0].CVAL;
-			while(LPIT0->TMR[0].CVAL < i +500){
-				PTE->PSOR |= (1<<TRIGGER_PIN);
-			}
-			PTE->PCOR |= (1<TRIGGER_PIN);
-		}
+
 		int i = LPIT0->TMR[0].CVAL;
 		
 		while((LPIT0->TMR[0].CVAL < i +500)&(LPIT0->TMR[0].CVAL > i)){
