@@ -28,8 +28,10 @@ void PORT_init (void)
 	PTE->PDDR &= ~(1<<ECHO_PIN0);  // PTE0를 입력으로 설정
 	PTE->PDDR &= ~(1<<ECHO_PIN1);  // PTE1를 입력으로 설정
 	
-	PORTE->PCR[ECHO_PIN1] = PORT_PCR_MUX(1);  // PTE1: GPIO로 설정, falling edge에서 인터럽트 발생
 	PTE->PDDR |= (1<<TRIGGER_PIN);  // PTE3를 출력으로 설정
+
+	PORTE->PCR[14] = PORT_PCR_MUX(1);  // 테스트용용
+	PTE->PDDR |= (1<<14);
 	
 }
 
@@ -37,7 +39,7 @@ void NVIC_init_IRQs(void)
 {
 	S32_NVIC->ICPR[1] |= 1<<(63%32); // Clear any pending IRQ61
 	S32_NVIC->ISER[1] |= 1<<(63%32); // Enable IRQ61
-	S32_NVIC->IP[61] =0xB; //Priority 11 of 15
+	S32_NVIC->IP[63] =0xB; //Priority 11 of 15
 	
 	/*LPIT ch0 overflow set*/
 	S32_NVIC->ICPR[1] |= 1 << (48 % 32);
@@ -59,7 +61,7 @@ void LPIT0_init()
 	LPIT0->TMR[0].TVAL = 40;      // 1us 마다 인터럽트 발생하도록
 	LPIT0->TMR[0].TCTRL = 0x00000001;
 	
-	LPIT0->TMR[1].TVAL = 40000;      // 1ms 마다 인터럽트 발생? 
+	LPIT0->TMR[1].TVAL = 2400000;      // 60ms 마다 인터럽트 발생? 
 	LPIT0->TMR[1].TCTRL = 0x00000001;
 }
 
@@ -83,25 +85,21 @@ void PORTE_IRQHandler(void)
 	PORTE->PCR[ECHO_PIN1] |= 0x01000000; //ISF 비트 1
 }
 
-void LPIT0_Ch1_IRQHandler (void)
+void LPIT0_Ch1_IRQHandler (void) // 60ms 마다
 {	  /* delay counter */
-	
-	count++;
-	if(count>65){
-		PTE->PSOR |= (1<<TRIGGER_PIN);
-		int delay = num;
-		while(num<delay+11){}
-		PTE->PCOR |= (1<<TRIGGER_PIN);
-		count = 0;
-	}
+	PTE->PSOR |= (1<<TRIGGER_PIN);
+	while(num>5){}
+	PTE->PCOR |= (1<<TRIGGER_PIN);
+	while(num>5){}
 
 	lpit0_ch1_flag_counter++;         /* Increment LPIT1 timeout counter */
 	LPIT0->MSR |= LPIT_MSR_TIF1_MASK;  /* Clear LPIT0 timer flag 1 */
 }
 
-void LPIT0_Ch0_IRQHandler (void)
+void LPIT0_Ch0_IRQHandler (void) // 1us 마다
 {
 	num++;
+	if(num>20) num=0;
 	lpit0_ch0_flag_counter++;         /* Increment LPIT0 timeout counter */
 	LPIT0->MSR |= LPIT_MSR_TIF0_MASK;  /* Clear LPIT0 timer flag 0 */
 }
@@ -121,19 +119,8 @@ int main(void)
 			float dist = 0.01715* pulse_width; 
 			pulse_width = 0;
 		}
-		// 500us 대기
-		int start = LPIT0->TMR[0].CVAL;
-		while(LPIT0->TMR[0].CVAL > start || LPIT0->TMR[0].CVAL < (start - 20000)) {}
-		
-		// 트리거 핀 LOW
-		PTE->PCOR = (1 << TRIGGER_PIN);
-		
-		// 500us 대기
-		start = LPIT0->TMR[0].CVAL;
-		while(LPIT0->TMR[0].CVAL > start || LPIT0->TMR[0].CVAL < (start - 20000)) {}
-				
-		}
-	// if (dist<20) // 너무 가까우면 
-	// 	;
-	// else 
+		if(dist<50)
+			PTE->PSOR |= 1<<14;
+		else PTE->PCOR |= 1<<14; 
+	}
 }
