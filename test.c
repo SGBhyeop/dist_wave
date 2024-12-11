@@ -102,10 +102,10 @@ void LPIT0_Ch1_IRQHandler (void)
 void LPIT0_Ch0_IRQHandler (void)
 {
 	num++;
-	if(num % 2 == 0){
+	while(num % 2 == 0){
         PTD->PSOR |= 1<<16;
     }
-    else {
+    while(num % 2 == 1){
         PTD->PCOR |= 1<<16;
     }
 	lpit0_ch0_flag_counter++;         /* Increment LPIT0 timeout counter */
