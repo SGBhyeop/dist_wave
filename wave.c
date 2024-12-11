@@ -171,6 +171,7 @@ void LPIT0_Ch1_IRQHandler (void)
 void LPIT0_Ch0_IRQHandler (void)
 {
 	num++;
+	if(num % 2 ==0)
 	PTD->PTOR |= 1<<0;
 	lpit0_ch0_flag_counter++;         /* Increment LPIT0 timeout counter */
 	LPIT0->MSR |= LPIT_MSR_TIF0_MASK;  /* Clear LPIT0 timer flag 0 */
@@ -186,5 +187,7 @@ int main(void)
    NVIC_init_IRQs();       /* Enable desired interrupts and priorities */
    LPIT0_init();
 
-   while(1);
+   while(1){
+
+   }
 }
